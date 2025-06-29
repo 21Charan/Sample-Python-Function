@@ -1,0 +1,200 @@
+#Task Manager with User Authentication
+
+import hashlib
+import os
+
+USERS_FILE = "users.txt"
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def register():
+    username = input("Enter new username: ").strip()
+    password = input("Enter new password: ").strip()
+    
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "r") as f:
+            for line in f:
+                stored_user, _ = line.strip().split(":")
+                if username == stored_user:
+                    print("Username already exists. Try a different one.")
+                    return None
+
+    with open(USERS_FILE, "a") as f:
+        f.write(f"{username}:{hash_password(password)}\n")
+    print("Registration successful!")
+    return username
+
+def login():
+    username = input("Enter username: ").strip()
+    password = input("Enter password: ").strip()
+
+    if not os.path.exists(USERS_FILE):
+        print("No users registered yet.")
+        return None
+
+    with open(USERS_FILE, "r") as f:
+        for line in f:
+            stored_user, stored_pass = line.strip().split(":")
+            if username == stored_user and hash_password(password) == stored_pass:
+                print("Login successful!")
+                return username
+    print("Invalid credentials.")
+    return None
+
+def get_task_file(username):
+    return f"tasks_{username}.txt"
+
+def add_task(username):
+    description = input("Enter task description: ").strip()
+    task_file = get_task_file(username)
+
+    task_id = 1
+    if os.path.exists(task_file):
+        with open(task_file, "r") as f:
+            lines = f.readlines()
+            if lines:
+                last_id = int(lines[-1].split("|")[0])
+                task_id = last_id + 1
+
+    with open(task_file, "a") as f:
+        f.write(f"{task_id}|{description}|Pending\n")
+    print("Task added successfully.")
+
+def view_tasks(username):
+    task_file = get_task_file(username)
+    if not os.path.exists(task_file):
+        print("No tasks found.")
+        return
+
+    with open(task_file, "r") as f:
+        tasks = f.readlines()
+
+    if not tasks:
+        print("No tasks available.")
+        return
+
+    print("\nYour Tasks:")
+    for task in tasks:
+        tid, desc, status = task.strip().split("|")
+        print(f"[{tid}] {desc} - {status}")
+    print()
+
+def mark_completed(username):
+    task_file = get_task_file(username)
+    if not os.path.exists(task_file):
+        print("No tasks to update.")
+        return
+
+    with open(task_file, "r") as f:
+        tasks = f.readlines()
+
+    if not tasks:
+        print("No tasks found.")
+        return
+
+    print("\nYour Tasks:")
+    for task in tasks:
+        tid, desc, status = task.strip().split("|")
+        print(f"[{tid}] {desc} - {status}")
+
+    task_id = input("Enter Task ID to mark as completed: ").strip()
+    updated = False
+
+    with open(task_file, "w") as f:
+        for line in tasks:
+            tid, desc, status = line.strip().split("|")
+            if tid == task_id:
+                f.write(f"{tid}|{desc}|Completed\n")
+                updated = True
+            else:
+                f.write(line)
+
+    if updated:
+        print("Task marked as completed.")
+    else:
+        print("Task ID not found.")
+
+def delete_task(username):
+    task_file = get_task_file(username)
+    if not os.path.exists(task_file):
+        print("No tasks to delete.")
+        return
+
+    with open(task_file, "r") as f:
+        tasks = f.readlines()
+
+    if not tasks:
+        print("No tasks found.")
+        return
+
+    print("\nYour Tasks:")
+    for task in tasks:
+        tid, desc, status = task.strip().split("|")
+        print(f"[{tid}] {desc} - {status}")
+
+    task_id = input("Enter Task ID to delete: ").strip()
+    deleted = False
+
+    with open(task_file, "w") as f:
+        for line in tasks:
+            tid, _, _ = line.strip().split("|")
+            if tid == task_id:
+                deleted = True
+                continue
+            f.write(line)
+
+    if deleted:
+        print("Task deleted.")
+    else:
+        print("Task ID not found.")
+
+def task_menu(username):
+    while True:
+        print(f"\nWelcome, {username}!")
+        print("1. Add Task")
+        print("2. View Tasks")
+        print("3. Mark Task as Completed")
+        print("4. Delete Task")
+        print("5. Logout")
+        choice = input("Choose an option: ").strip()
+
+        if choice == "1":
+            add_task(username)
+        elif choice == "2":
+            view_tasks(username)
+        elif choice == "3":
+            mark_completed(username)
+        elif choice == "4":
+            delete_task(username)
+        elif choice == "5":
+            print("Logging out...")
+            break
+        else:
+            print("Invalid option. Try again.")
+
+def main():
+    print("== Task Manager ==")
+    while True:
+        print("\n1. Register")
+        print("2. Login")
+        print("3. Exit")
+        option = input("Select option: ").strip()
+
+        if option == "1":
+            user = register()
+            if user:
+                task_menu(user)
+        elif option == "2":
+            user = login()
+            if user:
+                task_menu(user)
+        elif option == "3":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid input. Try again.")
+
+if __name__ == "__main__":
+    main()
+
