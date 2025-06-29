@@ -1,0 +1,145 @@
+Monthly Expense Tracker
+
+import csv
+import os
+from datetime import datetime
+
+# Global variables
+expenses = []
+monthly_budget = 0.0
+file_name = 'expenses.csv'
+
+def load_expenses():
+    global expenses
+    if not os.path.exists(file_name):
+        return
+    with open(file_name, mode='r', newline='') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            try:
+                # Validate and convert amount to float
+                amount = float(row['amount'])
+                # Validate date format
+                datetime.strptime(row['date'], '%Y-%m-%d')
+                expense = {
+                    'date': row['date'],
+                    'category': row['category'],
+                    'amount': amount,
+                    'description': row['description']
+                }
+                expenses.append(expense)
+            except (ValueError, KeyError):
+                print(f"Skipping invalid or incomplete entry in file: {row}")
+
+def save_expenses_to_custom_file():
+    file_name = input("my_expenses.csv").strip()
+    with open(file_name, mode='w', newline='') as file:
+        fieldnames = ['date', 'category', 'amount', 'description']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for expense in expenses:
+            writer.writerow(expense)
+    print(f"✅ Expenses saved successfully to {file_name}")
+
+def add_expense():
+    while True:
+        date_input = input("Enter date (YYYY-MM-DD): ").strip()
+        try:
+            datetime.strptime(date_input, '%Y-%m-%d')
+            break
+        except ValueError:
+            print("Invalid date format. Please try again.")
+    category = input("Enter category (e.g., Food, Travel): ").strip()
+    while True:
+        amount_input = input("Enter amount spent: ").strip()
+        try:
+            amount = float(amount_input)
+            if amount < 0:
+                print("Amount cannot be negative. Try again.")
+                continue
+            break
+        except ValueError:
+            print("Invalid amount. Please enter a number.")
+    description = input("Enter description: ").strip()
+
+    expense = {
+        'date': date_input,
+        'category': category,
+        'amount': amount,
+        'description': description
+    }
+    expenses.append(expense)
+    print("Expense added successfully!")
+
+def view_expenses():
+    if not expenses:
+        print("No expenses to display.")
+        return
+    print("\nAll Expenses:")
+    print(f"{'Date':<12} {'Category':<15} {'Amount':<10} {'Description'}")
+    print("-" * 60)
+    for exp in expenses:
+        if all(k in exp and exp[k] for k in ['date', 'category', 'amount', 'description']):
+            print(f"{exp['date']:<12} {exp['category']:<15} {exp['amount']:<10.2f} {exp['description']}")
+        else:
+            print("Skipping incomplete expense entry.")
+    print()
+
+def set_budget():
+    global monthly_budget
+    while True:
+        budget_input = input("Enter your monthly budget amount: ").strip()
+        try:
+            budget = float(budget_input)
+            if budget < 0:
+                print("Budget cannot be negative. Try again.")
+                continue
+            monthly_budget = budget
+            print(f"Monthly budget set to: {monthly_budget:.2f}")
+            break
+        except ValueError:
+            print("Invalid amount. Please enter a number.")
+
+def track_budget():
+    if monthly_budget == 0:
+        print("No monthly budget set yet. Please set it first.")
+        return
+    total_spent = sum(exp['amount'] for exp in expenses)
+    print(f"Total expenses so far: {total_spent:.2f}")
+    if total_spent > monthly_budget:
+        print("Warning: You have exceeded your budget!")
+    else:
+        remaining = monthly_budget - total_spent
+        print(f"You have {remaining:.2f} left for the month.")
+
+def display_menu():
+    print("\nPersonal Expense Tracker")
+    print("1. Add expense")
+    print("2. View expenses")
+    print("3. Set and track budget")
+    print("4. Save expenses")
+    print("5. Exit")
+
+def main():
+    load_expenses()
+    while True:
+        display_menu()
+        choice = input("Enter your choice (1-5): ").strip()
+        if choice == '1':
+            add_expense()
+        elif choice == '2':
+            view_expenses()
+        elif choice == '3':
+            set_budget()
+            track_budget()
+        elif choice == '4':
+            save_expenses()
+        elif choice == '5':
+            save_expenses()
+            print("Exiting program. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 5.")
+
+if __name__ == "__main__":
+    main()
